@@ -1,22 +1,25 @@
 """
-The basis_vectors.py file holds functions that generate the required parameters for the problem's basis atoms.
+The basis_atoms.py file holds functions that generate the required parameters for the problem's basis atoms.
 The two main functions [1] create a single basis atom or [2] create a slab. Additional functions create
 different types of configurations, which may not be as universal.
+The last function, get_atom_vectors(), extracts the necessary values given a basis atom array.
 """
 
 import numpy as np
+from typing import Tuple
 
 # Function that returns a single basis atom as a (1, 11) numpy array
-def single_atom(x: float, y: float, z: float, 
-                atom_type: int, E_0: float, U: float, n_0: float, 
-                B_x: float, B_y: float, B_z: float, V: float) -> np.ndarray:
+def single_atom(x: float = 0.0, y: float = 0.0, z: float = 0.0, 
+                atom_type: int = 1, E_0: float = 0.0, U: float = 0.0, n_bar: float = 1.0, 
+                B_x: float = 0.0, B_y: float = 0.0, B_z: float = 0.0, Λ: float = 0.5) -> np.ndarray:
     
-    atom = np.array([[x, y, z, atom_type, E_0, U, n_0, B_x, B_y, B_z, V]])
+    atom = np.array([[x, y, z, atom_type, E_0, U, n_bar, B_x, B_y, B_z, Λ]])
     return atom
 
 # Function that returns a slab along a specified axis, with given starting index and length
-def slab(start_index: int, slab_length: int, fixed_coord_1: float, fixed_coord_2: float, axis: str,
-         atom_type: int, E_0: float, U: float, n_0: float, B_x: float, B_y: float, B_z: float, V: float) -> np.ndarray:
+def slab(start_index: int = 0, slab_length: int = 50, fixed_coord_1: float = 0.0, fixed_coord_2: float = 0.0, axis: str = 'z', 
+         atom_type: int = 1, E_0: float = 0.0, U: float = 0.0, n_bar: float = 0.4, 
+         B_x: float = 0.0, B_y: float = 0.0, B_z: float = 0.0, Λ: float = 0.5) -> np.ndarray:
     
     assert axis in ('x', 'y', 'z'), "Invalid axis. Choose from 'x', 'y', or 'z'"
     
@@ -39,7 +42,7 @@ def slab(start_index: int, slab_length: int, fixed_coord_1: float, fixed_coord_2
         coords = np.hstack((fixed_coords_1, fixed_coords_2, varying_coord))
     
     # Create arrays for the other atom parameters
-    other_params = np.array([atom_type, E_0, U, n_0, B_x, B_y, B_z, V])
+    other_params = np.array([atom_type, E_0, U, n_bar, B_x, B_y, B_z, Λ])
     other_params_repeated = np.tile(other_params, (slab_length, 1))
     
     # Concatenate the coordinates and other parameters to form the slab
@@ -47,3 +50,14 @@ def slab(start_index: int, slab_length: int, fixed_coord_1: float, fixed_coord_2
     
     return slab
 
+def extract_atom_vectors(basis_atoms: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    TPTS = basis_atoms[:, :3]
+    atom_types = basis_atoms[:, 3]
+    E_0 = basis_atoms[:, 4]
+    U = basis_atoms[:, 5]
+    n_bar = basis_atoms[:, 6]
+    B = basis_atoms[:, 7:10]
+    Λ = basis_atoms[:, 10]
+
+    return TPTS, atom_types, E_0, U, n_bar, B, Λ
+    
