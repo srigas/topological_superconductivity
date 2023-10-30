@@ -26,10 +26,10 @@ def get_bravais(vec_type: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
 # Function that returns the 2D Pauli matrices as a tuple
 def get_pauli() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    s_0 = np.array([[1+0j, 0+0j], [0+0j, 1+0j]], dtype=complex)
-    s_1 = np.array([[0+0j, 1+0j], [1+0j, 0+0j]], dtype=complex)
-    s_2 = np.array([[0+0j, 0-1j], [0+1j, 0+0j]], dtype=complex)
-    s_3 = np.array([[1+0j, 0+0j], [0+0j, -1+0j]], dtype=complex)
+    s_0 = np.array([[1+0j, 0+0j], [0+0j, 1+0j]], dtype=np.complex128)
+    s_1 = np.array([[0+0j, 1+0j], [1+0j, 0+0j]], dtype=np.complex128)
+    s_2 = np.array([[0+0j, 0-1j], [0+1j, 0+0j]], dtype=np.complex128)
+    s_3 = np.array([[1+0j, 0+0j], [0+0j, -1+0j]], dtype=np.complex128)
     
     return s_0, s_1, s_2, s_3
 
@@ -50,12 +50,14 @@ class Config:
     NCELLS: int = 1
     # Temperature
     T: float = 0.0
-    # Initial value for μ
-    mu_0: float = 0.0
-    # Initial value for charges
-    q_0: float = 0.8
+    # Boltzmann constant
+    k_B: float = 1.0
+    # Initial guess for μ
+    μ_0: float = 0.0
+    # Initial guess for charges
+    n_0: float = 0.8
     # Initial value for Δ
-    D_0: complex = 0.3 + 0.0j
+    Δ_0: complex = 0.3 + 0.0j
     # Mixing factor for charges
     mix_q: float = 0.1
     # Mixing factor for Δ
@@ -77,8 +79,8 @@ class Config:
     a_1, a_2, a_3 = get_bravais(latt)
     a_1, a_2, a_3 = ALAT*a_1, ALAT*a_2, ALAT*a_3
 
-    # Get NUMK
-    NUMK: int = N_x * N_y * N_z
+    # Get number of k-points
+    N_k: int = N_x * N_y * N_z
 
     # Get the Pauli matrices
     s_0, s_1, s_2, s_3 = get_pauli()

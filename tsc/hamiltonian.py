@@ -4,12 +4,14 @@ as the solution of the BdG Equations.
 """
 
 import numpy as np
+import numba
 
 # This function calculates the hopping element constants, t_0
 # It is far from optimized, however in this case readability is more important than efficiency,
 # because it is a function that runs once, not through every self-consistency cycle
-def hopping_consts(hop_mat: np.ndarray, N_b: int, atom_types: np.ndarray, TPTS: np.ndarray, RPTS: np.ndarray, R_0: float) -> np.ndarray:
-    N_unique = hop_mat.shape[0]
+def hopping_consts(hop_mat: np.ndarray, atom_types: np.ndarray, TPTS: np.ndarray, RPTS: np.ndarray, R_0: float) -> np.ndarray:
+    N_unique: int = hop_mat.shape[0]
+    N_b: int = atom_types.shape[0]
     # Array to hold the hopping element constants
     t_0 = np.zeros((N_unique,N_unique))
     # Array to hold the minimum distances between atom types
@@ -62,3 +64,80 @@ def hopping_elements(type_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.n
             t[i,j] = -const*np.exp(-np.linalg.norm(rpoint)/R_0)
         
     return t
+
+# This function returns the fourier exponentials
+def get_exponentials(Rvec_ij: np.ndarray, KPTS: np.ndarray) -> np.ndarray:
+
+    # Expand KPTS and Rvec_ij
+    KPTS_expanded = KPTS[:, :, None, None]  # Shape: (N_k, 3, 1, 1)
+    Rvec_ij_expanded = Rvec_ij[None, :, :, :]  # Shape: (1, N_b, max_neighb, 3)
+
+    # Transpose KPTS_expanded to match the last dimension with Rvec_ij_expanded
+    KPTS_transposed = np.transpose(KPTS_expanded, (0, 2, 3, 1))  # Shape: (N_k, 1, 1, 3)
+
+    # Compute the dot product
+    dot_product = np.sum(KPTS_transposed * Rvec_ij_expanded, axis=-1)  # Shape: (N_k, N_b, max_neighb)
+    
+    # Compute the exponential term
+    exponentials = np.exp(-1j * dot_product) # Shape: (N_k, N_b, max_neighb)
+
+    return exponentials
+
+# This function prepares the Hamiltonian when it comes to everything but the hopping term
+@numba.njit
+def prep_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
+                     Δ: np.ndarray, s_0: np.ndarray, s_1: np.ndarray, s_2: np.ndarray, s_3: np.ndarray) -> np.ndarray:
+
+    N_b: int = E_0.shape[0]
+    h = np.zeros((2,2), dtype=np.complex128)
+    H_prep = np.zeros((4*N_b, 4*N_b), dtype=np.complex128)
+
+    for i in range(N_b):
+        h = (E_0[i] - μ + U[i]*(n[i]-n_bar[i]))*s_0 - B[i][0]*s_1 - B[i][1]*s_2 - B[i][2]*s_3
+
+        H_prep[i, i] = h[0,0]
+        H_prep[i, i+N_b] = h[0,1]
+        #H_prep[i, i+2*N_b] = 0.0 + 0.0j
+        H_prep[i, i+3*N_b] = Δ[i]
+
+        H_prep[i+N_b, i] = h[1,0]
+        H_prep[i+N_b, i+N_b] = h[1,1]
+        H_prep[i+N_b, i+2*N_b] = Δ[i]
+        #H_prep[i+N_b, i+3*N_b] = 0.0 + 0.0j
+
+        #H_prep[i+2*N_b, i] = 0.0 + 0.0j
+        H_prep[i+2*N_b, i+N_b] = np.conj(Δ[i])
+        H_prep[i+2*N_b, i+2*N_b] = -np.conj(h[0,0])
+        H_prep[i+2*N_b, i+3*N_b] = np.conj(h[0,1])
+
+        H_prep[i+3*N_b, i] = np.conj(Δ[i])
+        #H_prep[i+3*N_b, i+N_b] = 0.0 + 0.0j
+        H_prep[i+3*N_b, i+2*N_b] = np.conj(h[1,0])
+        H_prep[i+3*N_b, i+3*N_b] = -np.conj(h[1,1])
+
+    return H_prep
+
+# This function creates the full k-Hamiltonian, including the hopping
+@numba.njit
+def get_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
+                    fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
+
+    H = H_prep
+    N_b: int = type_IJ.shape[0]
+
+    # loop over all atoms
+    for i in range(N_b):
+        # loop over all neighbours
+        for j in range(num_neighbs[i]):
+            # Get type of j
+            Jatom = type_IJ[i,j]
+            # calculate Fourier constant * hopping element
+            term = t[i,j]*fourier[k,i,j]
+
+            # Append accordingly
+            H[i,Jatom] += term
+            H[i + N_b, Jatom + N_b] += term
+            H[i + 2*N_b, Jatom + 2*N_b] -= term
+            H[i + 3*N_b, Jatom + 3*N_b] -= term
+
+    return H

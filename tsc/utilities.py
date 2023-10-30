@@ -6,24 +6,16 @@ The utilities.py file holds functions that are relevant for many different appli
 import numpy as np
 from typing import Tuple
 
-# Fermi function
-def Fermi(E: float, T: float, KB: float) -> float:
-    if T < 1e-8: # Check for zero temperature
-        if E < 0.0:
-            return 1.0
-        elif E == 0.0:
-            return 0.5
-        else:
-            return 0.0
+# Vectorized Fermi function
+def fermi(E: np.ndarray, T: float, k_B: float) -> np.ndarray:
+    if T < 1e-8:
+        result = np.where(E > 0, 1.0, np.where(E == 0, 0.5, 0.0))
     else:
-        term = E / (KB * T)
-        # to avoid overflow errors
-        if term > 500.0:
-            return 0.0
-        elif term < -500.0:
-            return 1.0
-        else:
-            return 1.0 / (np.exp(term) + 1.0)
+        term = E / (k_B * T)
+        # Clip term values to avoid overflow/underflow
+        clipped_term = np.clip(term, -500.0, 500.0)
+        result = 1.0 / (np.exp(clipped_term) + 1.0)
+    return result
 
 # Function that returns a (2NCELLS+1)x(2NCELLS+1)x(2NCELLS+1) grid
 def get_RPTS(a_1: np.ndarray, a_2: np.ndarray, a_3: np.ndarray, NCELLS: int) -> np.ndarray:
