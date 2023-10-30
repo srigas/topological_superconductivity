@@ -103,3 +103,21 @@ def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: 
                     added += 1
 
     return type_IJ, Rvec_ij
+
+# Function to get DoS using the energy eigenvalues and the electron eigenvectors as weights
+# Surprisingly, vectorizing this in terms of energies results into a slower execution time
+def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int) -> Tuple[np.ndarray, np.ndarray]:
+    # Get the energies and make an energy grid
+    Es = np.linspace(E_vals.min(),E_vals.max(),intervals)
+    # Setup an array to hold the DoS values
+    DOS = np.zeros((N_b,intervals))
+
+    # Extract wavefunctions for electrons
+    u_ups, u_downs = E_vecs[:N_b, :], E_vecs[N_b:2*N_b, :]
+    u_up_squared = np.abs(u_ups)**2
+    u_down_squared = np.abs(u_downs)**2
+    
+    for idx, E in enumerate(Es):
+        DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals-E)**2)).sum(axis=1)
+
+    return Es, DOS

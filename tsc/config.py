@@ -49,23 +49,21 @@ class Config:
     # Create a (2NCELLS+1)^3 mini-cube to determine neighbours
     NCELLS: int = 1
     # Temperature
-    T: float = 0.0
+    T: float = 0.0005
     # Boltzmann constant
     k_B: float = 1.0
     # Initial guess for μ
-    μ_0: float = 0.0
+    μ_0: float = 0.1
     # Initial guess for charges
-    n_0: float = 0.8
+    n_0: float = 0.35
     # Initial value for Δ
-    Δ_0: complex = 0.3 + 0.0j
+    Δ_0: complex = 0.0 + 0.0j
     # Mixing factor for charges
-    mix_q: float = 0.1
+    mix_n: float = 0.1
     # Mixing factor for Δ
-    mix_D: float = 0.1
-    # Points for DoS
-    NUME: int = 1000
+    mix_Δ: float = 0.1
     # Lorentz Gamma broadening
-    l: float = 0.1
+    Γ: float = 0.1
     # Threshold for metal self-consistency
     e_metal: float = 1e-4
     # Threshold for superconductor self-consistency

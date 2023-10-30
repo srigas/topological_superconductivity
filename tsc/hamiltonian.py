@@ -1,10 +1,12 @@
 """
 The hamiltonian.py file contains all the functions necessary for the construction of the Hamiltonian matrix, to be diagonalized
-as the solution of the BdG Equations.
+as the solution of the BdG Equations. There are two types of hamiltonians: the metal one and the superconducting one.
 """
 
 import numpy as np
 import numba
+
+import copy
 
 # This function calculates the hopping element constants, t_0
 # It is far from optimized, however in this case readability is more important than efficiency,
@@ -83,9 +85,58 @@ def get_exponentials(Rvec_ij: np.ndarray, KPTS: np.ndarray) -> np.ndarray:
 
     return exponentials
 
-# This function prepares the Hamiltonian when it comes to everything but the hopping term
+# ------------------------------------
+#            HAMILTONIANS
+# ------------------------------------
+
+# This function prepares the Hamiltonian's base (i.e. everything apart from the hopping and Fourier)
+# Normal Metal Version
 @numba.njit
-def prep_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
+def prep_N_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
+                       s_0: np.ndarray, s_1: np.ndarray, s_2: np.ndarray, s_3: np.ndarray) -> np.ndarray:
+
+    N_b: int = E_0.shape[0]
+    h = np.zeros((2,2), dtype=np.complex128)
+    H_prep = np.zeros((2*N_b, 2*N_b), dtype=np.complex128)
+
+    for i in range(N_b):
+        h = (E_0[i] - μ + U[i]*(n[i]-n_bar[i]))*s_0 - B[i][0]*s_1 - B[i][1]*s_2 - B[i][2]*s_3
+
+        H_prep[i, i] = h[0,0]
+        H_prep[i, i+N_b] = h[0,1]
+        H_prep[i+N_b, i] = h[1,0]
+        H_prep[i+N_b, i+N_b] = h[1,1]
+
+    return H_prep
+
+# This function creates the full k-Hamiltonian, including the hopping elements
+# Normal Metal Version
+@numba.njit
+def get_N_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
+                      fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
+
+    H = H_prep
+    N_b: int = type_IJ.shape[0]
+
+    # loop over all atoms
+    for i in range(N_b):
+        # loop over all neighbours
+        for j in range(num_neighbs[i]):
+            # Get type of j
+            Jatom = type_IJ[i,j]
+            # calculate Fourier constant * hopping element
+            term = t[i,j]*fourier[k,i,j]
+
+            # Append accordingly
+            H[i,Jatom] += term
+            H[i + N_b, Jatom + N_b] += term
+
+    return H
+
+# This function prepares the Hamiltonian's base (i.e. everything apart from the hopping and Fourier)
+# Superconductivity Version
+@numba.njit
+def prep_SC_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
                      Δ: np.ndarray, s_0: np.ndarray, s_1: np.ndarray, s_2: np.ndarray, s_3: np.ndarray) -> np.ndarray:
 
     N_b: int = E_0.shape[0]
@@ -117,9 +168,10 @@ def prep_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n
 
     return H_prep
 
-# This function creates the full k-Hamiltonian, including the hopping
+# This function creates the full k-Hamiltonian, including the hopping elements
+# Superconductivity Version
 @numba.njit
-def get_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
+def get_SC_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
                     fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
 
     H = H_prep
