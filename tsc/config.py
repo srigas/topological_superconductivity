@@ -55,9 +55,9 @@ class Config:
     # Initial guess for μ
     μ_0: float = 0.1
     # Initial guess for charges
-    n_0: float = 0.35
+    n_0: float = 0.8
     # Initial value for Δ
-    Δ_0: complex = 0.0 + 0.0j
+    Δ_0: complex = 0.2 + 0.0j
     # Mixing factor for charges
     mix_n: float = 0.1
     # Mixing factor for Δ
