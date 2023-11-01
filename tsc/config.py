@@ -7,21 +7,23 @@ import numpy as np
 from typing import Tuple
 
 # Function that returns the Bravais vectors of the corresponding lattice as a tuple
-def get_bravais(vec_type: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if vec_type == "SC":
+def get_bravais(latt: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    
+    assert latt in ('SC', 'BCC', 'FCC'), "Not implemented. Choose from 'SC', 'BCC', or 'FCC'"
+    
+    if latt == "SC":
         a_1 = np.array([1.0,0.0,0.0])
         a_2 = np.array([0.0,1.0,0.0])
         a_3 = np.array([0.0,0.0,1.0])
-    elif vec_type == "BCC":
+    elif latt == "BCC":
         a_1 = np.array([0.5,0.5,-0.5])
         a_2 = np.array([-0.5,0.5,0.5])
         a_3 = np.array([0.5,-0.5,0.5])
-    elif vec_type == "FCC":
+    else:
         a_1 = np.array([0.5,0.5,0.0])
         a_2 = np.array([0.0,0.5,0.5])
         a_3 = np.array([0.5,0.0,0.5])
-    else:
-        print("Not implemented")
+        
     return a_1, a_2, a_3
 
 # Function that returns the 2D Pauli matrices as a tuple
