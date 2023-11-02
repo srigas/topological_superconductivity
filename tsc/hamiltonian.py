@@ -58,8 +58,10 @@ def hopping_elements(type_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.n
             rpoint = Rvec_ij[i,j,:]
             # Get the type of atom for the i atom
             Iatom = atom_types[i]
+            # Get the j-th atom index
+            Jindex = type_IJ[i,j]
             # Get the type of atom for the j atom
-            Jatom = type_IJ[i,j]
+            Jatom = atom_types[Jindex]
             # Get the corresponding hopping constant
             const = t_0[Iatom,Jatom]
             # Finally, the hopping element
@@ -122,7 +124,7 @@ def get_N_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neigh
     for i in range(N_b):
         # loop over all neighbours
         for j in range(num_neighbs[i]):
-            # Get type of j
+            # Get j-th atom index
             Jatom = type_IJ[i,j]
             # calculate Fourier constant * hopping element
             term = t[i,j]*fourier[k,i,j]
@@ -181,7 +183,7 @@ def get_SC_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neig
     for i in range(N_b):
         # loop over all neighbours
         for j in range(num_neighbs[i]):
-            # Get type of j
+            # Get j-th atom index
             Jatom = type_IJ[i,j]
             # calculate Fourier constant * hopping element
             term = t[i,j]*fourier[k,i,j]
