@@ -8,7 +8,7 @@ While FORTRAN is an excellent programming language for scientific computing due 
 
 ## Environment setup
 
-There are directions on how to setup the necessary environment to run the code inside the [Documentation](/docs/%5B0%5D%20Documentation) notebook manually. The `requirements.txt` file holds all necessary libraries. To create a new environment called `TSC` and install the requirements, first run
+There are directions on how to setup the necessary environment to run the code inside the [Documentation](/docs/0.%20Documentation) notebook manually. The `requirements.txt` file holds all necessary libraries. To create a new environment called `TSC` and install the requirements, first run
 
 ```
 conda create --name TSC -y
