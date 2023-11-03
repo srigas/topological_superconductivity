@@ -84,6 +84,29 @@ def plot_tdos(Es: np.ndarray, TDoS: np.ndarray):
     plt.show()
     return
 
+# Function to plot the integrated number density
+def plot_intnumden(E_vals_sorted: np.ndarray, intnumden: np.ndarray, μ: float):
+    # Setup the grid
+    set_custom_grid()
+    
+    # Setup figure, set dimensions
+    plt.figure(figsize=(10, 4))
+    # Draw the lineplot
+    plt.plot(E_vals_sorted, intnumden, color='#d957ce')
+    # Add the Fermi level
+    plt.axvline(x=μ, color='#e0eb8f', linestyle='--', label=f'Fermi Level')
+    
+    plt.xlabel('Energy')
+    plt.ylabel('Number of states (Normalized)')
+    plt.title('Integrated Number Density')
+
+    # Stylize the legend
+    legend = plt.legend()
+    plt.setp(legend.get_texts(), color='white')
+    
+    plt.show()
+    return
+
 # This function plots the band structure for the non-weighted problem
 def plot_bands(band_vals: np.ndarray, x_for_plot: np.ndarray, plot_points_x: np.ndarray, letters: List[str], μ: float, points_str: str):
     
