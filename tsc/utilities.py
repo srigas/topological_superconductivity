@@ -104,11 +104,20 @@ def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: 
 
     return type_IJ, Rvec_ij
 
+# Simple function that returns an energy mesh to perform DoS calculations
+def get_dos_mesh(E_min: float, E_max: float, intervals: int) -> np.ndarray:
+
+    # Get the energies and make an energy grid
+    Es = np.linspace(E_min,E_max,intervals)
+
+    return Es
+
 # Function to get DoS using the energy eigenvalues and the electron eigenvectors as weights
 # Surprisingly, vectorizing this in terms of energies results into a slower execution time
-def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ: float, N_k: int) -> Tuple[np.ndarray, np.ndarray]:
-    # Get the energies and make an energy grid
-    Es = np.linspace(E_vals.min(),E_vals.max(),intervals)
+def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, Es: np.ndarray, N_b: int, Γ: float, N_k: int) -> np.ndarray:
+
+    intervals = Es.shape[0]
+    
     # Setup an array to hold the DoS values
     DOS = np.zeros((N_b,intervals))
 
@@ -120,4 +129,12 @@ def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ
     for idx, E in enumerate(Es):
         DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals-E)**2)).sum(axis=1)
 
-    return Es, DOS
+    return DOS
+
+# Function that creates an energy mesh, including integration weights, to be used for
+# integrals that are required to get observables
+def get_int_mesh() -> :
+
+    
+    
+    return
