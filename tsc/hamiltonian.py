@@ -189,3 +189,65 @@ def get_SC_hamiltonian(k: int, H_prep: np.ndarray, atom_IJ: np.ndarray, num_neig
             H[i + 3*N_b, Jatom + 3*N_b] -= term
 
     return H
+
+# -----------------------------------------------------------------------------------
+# The following are some vectorized approaches at building the Hamiltonian matrices
+# They are developed only for the N problem, but it is straightforward to extend them
+# to the SC problem as well.
+# -----------------------------------------------------------------------------------
+
+def prep_N_hamiltonian_vectorized(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
+                       s_0: np.ndarray, s_1: np.ndarray, s_2: np.ndarray, s_3: np.ndarray, N_k: int) -> np.ndarray:
+
+    N_b = E_0.shape[0]
+    H_prep = np.zeros((2 * N_b, 2 * N_b), dtype=np.complex128)
+    
+    # Calculate the scalar term for each h matrix
+    scalar_terms = E_0 - μ + U * (n - n_bar)
+    
+    # Calculate the contributions for each sigma matrix
+    h_contrib = np.zeros((N_b, 2, 2), dtype=np.complex128)
+    
+    h_contrib += scalar_terms[:, np.newaxis, np.newaxis] * s_0  # Broadcasting scalar_terms
+    h_contrib -= B[:, 0, np.newaxis, np.newaxis] * s_1  # Broadcasting B[:, 0]
+    h_contrib -= B[:, 1, np.newaxis, np.newaxis] * s_2  # Broadcasting B[:, 1]
+    h_contrib -= B[:, 2, np.newaxis, np.newaxis] * s_3  # Broadcasting B[:, 2]
+    
+    # Fill the diagonal blocks of H_prepu_up_squared
+    H_prep[np.arange(N_b), np.arange(N_b)] = h_contrib[:, 0, 0]
+    H_prep[np.arange(N_b), np.arange(N_b) + N_b] = h_contrib[:, 0, 1]
+    H_prep[np.arange(N_b) + N_b, np.arange(N_b)] = h_contrib[:, 1, 0]
+    H_prep[np.arange(N_b) + N_b, np.arange(N_b) + N_b] = h_contrib[:, 1, 1]
+    
+    # Create a 3D array with copies of H_prep along the first dimension
+    H_prep_3D = np.tile(H_prep[np.newaxis, :, :], (N_k, 1, 1))
+
+    return H_prep_3D
+
+def get_N_hamiltonian_vectorized(H: np.ndarray, atom_IJ: np.ndarray, num_neighbs: np.ndarray, 
+                      fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
+
+    N_k = fourier.shape[0]
+    N_b = fourier.shape[1]
+
+    # Flatten the i and Jatom indices, while repeating them for each k-point
+    k_indices = np.tile(np.arange(N_k)[:, np.newaxis, np.newaxis], (1, N_b, num_neighbs.max()))
+    i_indices = np.tile(np.arange(N_b)[np.newaxis, :, np.newaxis], (N_k, 1, num_neighbs.max()))
+    Jatom_indices = np.tile(atom_IJ[np.newaxis, :, :], (N_k, 1, 1))
+    
+    # Prepare a mask for valid neighbor indices within num_neighbs for each atom
+    valid_neighbors_mask = np.tile(np.arange(num_neighbs.max())[np.newaxis, np.newaxis, :], (N_k, N_b, 1)) < num_neighbs[np.newaxis, :, np.newaxis]
+    
+    # Calculate the terms to be added, using broadcasting
+    terms = t * fourier  # fourier and t should be broadcastable to shape (N_k, N_b, max_neighbors)
+    
+    # Use the valid_neighbors_mask to zero out the invalid terms
+    terms[~valid_neighbors_mask] = 0
+    
+    # Add the terms to the Hamiltonian for the upper-left block
+    np.add.at(H, (k_indices, i_indices, Jatom_indices), terms)
+    
+    # Add the terms to the Hamiltonian for the lower-right block
+    np.add.at(H, (k_indices, i_indices + N_b, Jatom_indices + N_b), terms)
+
+    return H

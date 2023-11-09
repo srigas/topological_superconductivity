@@ -67,21 +67,28 @@ def get_KPTS(a_1: np.ndarray, a_2: np.ndarray, a_3: np.ndarray, N_x: int, N_y: i
 # Function that counts the number of neighbours for every atom, given R_max
 def get_nndists(RPTS: np.ndarray, TPTS: np.ndarray, R_max: float) -> np.ndarray:
 
-    N_b : int = TPTS.shape[0]
-    # Array to hold the number of neighbours for every atom
-    num_neighbs = np.zeros((N_b), dtype=int)
-
-    for i in range(N_b):
-        for j in range(N_b):
-            ttprime = TPTS[j] - TPTS[i]
-            for rpoint in RPTS:
-                dist = np.linalg.norm(rpoint + ttprime)
-                if (dist < R_max + 1e-5) and (dist > 1e-5):
-                    num_neighbs[i] += 1
+    # Compute all ttprime differences (shape will be N_b x N_b x 3)
+    ttprime = TPTS[:, np.newaxis, :] - TPTS[np.newaxis, :, :]
+    
+    # Compute the distance from all rpoints to each ttprime
+    # Reshape RPTS for broadcasting (shape will be 1 x 1 x len(RPTS) x 3)
+    RPTS_reshaped = RPTS.reshape((1, 1, -1, 3))
+    # Calculate the distances (shape will be N_b x N_b x len(RPTS))
+    distances = np.linalg.norm(RPTS_reshaped + ttprime[:, :, np.newaxis, :], axis=3)
+    
+    # Apply the distance criteria to count the number of neighbours
+    # The distance criteria are applied within a 3D mask (shape will be N_b x N_b x len(RPTS))
+    mask = (distances < R_max + 1e-5) & (distances > 1e-5)
+    # Sum over the third axis to count the neighbors (shape will be N_b x N_b)
+    num_neighbs = np.sum(mask, axis=2)
+    
+    # This is the symmetric matrix where the i,j element counts the number of j type neighbours that i type has
+    # We simply need the total number of neighbours per atom, so we sum over the second axis
+    num_neighbs = np.sum(num_neighbs, axis=1)
                     
     return num_neighbs
 
-# Get the type and distance connection vectors
+# Get the atom and distance connection vectors
 def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: float) -> Tuple[np.ndarray, np.ndarray]:
 
     N_b: int = TPTS.shape[0]
