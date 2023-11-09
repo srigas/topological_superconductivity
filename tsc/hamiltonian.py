@@ -47,9 +47,9 @@ def hopping_consts(hop_mat: np.ndarray, atom_types: np.ndarray, TPTS: np.ndarray
     return t_0
 
 # This function calculates the full hopping elements
-def hopping_elements(type_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.ndarray, atom_types: np.ndarray, t_0: np.ndarray, R_0: float) -> np.ndarray:
+def hopping_elements(atom_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.ndarray, atom_types: np.ndarray, t_0: np.ndarray, R_0: float) -> np.ndarray:
 
-    N_b, max_neighb = type_IJ.shape
+    N_b, max_neighb = atom_IJ.shape
     t = np.zeros((N_b,max_neighb))
     
     for i in range(N_b):
@@ -59,7 +59,7 @@ def hopping_elements(type_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.n
             # Get the type of atom for the i atom
             Iatom = atom_types[i]
             # Get the j-th atom index
-            Jindex = type_IJ[i,j]
+            Jindex = atom_IJ[i,j]
             # Get the type of atom for the j atom
             Jatom = atom_types[Jindex]
             # Get the corresponding hopping constant
@@ -72,18 +72,12 @@ def hopping_elements(type_IJ: np.ndarray, num_neighbs: np.ndarray, Rvec_ij: np.n
 # This function returns the fourier exponentials
 def get_exponentials(Rvec_ij: np.ndarray, KPTS: np.ndarray) -> np.ndarray:
 
-    # Expand KPTS and Rvec_ij
-    KPTS_expanded = KPTS[:, :, None, None]  # Shape: (N_k, 3, 1, 1)
-    Rvec_ij_expanded = Rvec_ij[None, :, :, :]  # Shape: (1, N_b, max_neighb, 3)
-
-    # Transpose KPTS_expanded to match the last dimension with Rvec_ij_expanded
-    KPTS_transposed = np.transpose(KPTS_expanded, (0, 2, 3, 1))  # Shape: (N_k, 1, 1, 3)
-
-    # Compute the dot product
-    dot_product = np.sum(KPTS_transposed * Rvec_ij_expanded, axis=-1)  # Shape: (N_k, N_b, max_neighb)
+    # Rvec has shape i, j, 3 and KPTS has shape k, 3
+    # Perform Einstein summation
+    dot_products = np.einsum('km,ijm->kij', KPTS, Rvec_ij)
     
     # Compute the exponential term
-    exponentials = np.exp(-1j * dot_product) # Shape: (N_k, N_b, max_neighb)
+    exponentials = np.exp(1j * dot_products) # Shape: (N_k, N_b, max_neighb)
 
     return exponentials
 
@@ -114,18 +108,18 @@ def prep_N_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray,
 # This function creates the full k-Hamiltonian, including the hopping elements
 # Normal Metal Version
 @numba.njit
-def get_N_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
+def get_N_hamiltonian(k: int, H_prep: np.ndarray, atom_IJ: np.ndarray, num_neighbs: np.ndarray, 
                       fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
 
     H = H_prep
-    N_b: int = type_IJ.shape[0]
+    N_b: int = atom_IJ.shape[0]
 
     # loop over all atoms
     for i in range(N_b):
         # loop over all neighbours
         for j in range(num_neighbs[i]):
             # Get j-th atom index
-            Jatom = type_IJ[i,j]
+            Jatom = atom_IJ[i,j]
             # calculate Fourier constant * hopping element
             term = t[i,j]*fourier[k,i,j]
 
@@ -173,18 +167,18 @@ def prep_SC_hamiltonian(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray
 # This function creates the full k-Hamiltonian, including the hopping elements
 # Superconductivity Version
 @numba.njit
-def get_SC_hamiltonian(k: int, H_prep: np.ndarray, type_IJ: np.ndarray, num_neighbs: np.ndarray, 
+def get_SC_hamiltonian(k: int, H_prep: np.ndarray, atom_IJ: np.ndarray, num_neighbs: np.ndarray, 
                     fourier: np.ndarray, t: np.ndarray) -> np.ndarray:
 
     H = H_prep
-    N_b: int = type_IJ.shape[0]
+    N_b: int = atom_IJ.shape[0]
 
     # loop over all atoms
     for i in range(N_b):
         # loop over all neighbours
         for j in range(num_neighbs[i]):
             # Get j-th atom index
-            Jatom = type_IJ[i,j]
+            Jatom = atom_IJ[i,j]
             # calculate Fourier constant * hopping element
             term = t[i,j]*fourier[k,i,j]
 

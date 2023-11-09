@@ -86,7 +86,7 @@ def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: 
 
     N_b: int = TPTS.shape[0]
     # Arrays to hold the required results
-    type_IJ = np.zeros((N_b, max_neighb), dtype=int)
+    atom_IJ = np.zeros((N_b, max_neighb), dtype=int)
     Rvec_ij = np.zeros((N_b, max_neighb, 3))
 
     for i in range(N_b):
@@ -99,12 +99,12 @@ def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: 
                 if (dist < R_max + 1e-5) and (dist > 1e-5):
                     # Get the type of atom j that is a neighbour of atom i
                     # excluding self-interactions
-                    type_IJ[i, added] = j
+                    atom_IJ[i, added] = j
                     # Get the vector connecting atom j to atom i
                     Rvec_ij[i, added, :] = vec
                     added += 1
 
-    return type_IJ, Rvec_ij
+    return atom_IJ, Rvec_ij
 
 
 # Function to get DoS using the energy eigenvalues and the electron eigenvectors as weights
