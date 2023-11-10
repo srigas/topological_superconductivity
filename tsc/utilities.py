@@ -125,12 +125,12 @@ def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ
     DOS = np.zeros((N_b,intervals))
 
     # Extract wavefunctions for electrons
-    u_ups, u_downs = E_vecs[:N_b, :], E_vecs[N_b:2*N_b, :]
+    u_ups, u_downs = E_vecs[:, :N_b, :], E_vecs[:, N_b:2*N_b, :]
     u_up_squared = np.abs(u_ups)**2
     u_down_squared = np.abs(u_downs)**2
     
     for idx, E in enumerate(Es):
-        DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals-E)**2)).sum(axis=1)
+        DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals[:, np.newaxis, :]-E)**2)).sum(axis=(0,2))
 
     return Es, DOS
 
