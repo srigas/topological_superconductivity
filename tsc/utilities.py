@@ -130,7 +130,7 @@ def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ
     u_down_squared = np.abs(u_downs)**2
 
     # Check if user wants to do stuff vectorized - the downside is that the pc may not be
-    # able to handle the operation memory-wise. If it can, vectorized is faster
+    # able to handle the operation memory-wise. If it can, vectorized *may* be faster on occasion
     if not vect:
         for idx, E in enumerate(Es):
             DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals[:, np.newaxis, :]-E)**2)).sum(axis=(0,2))
