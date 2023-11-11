@@ -116,7 +116,7 @@ def get_connections(max_neighb: int, RPTS: np.ndarray, TPTS: np.ndarray, R_max: 
 
 # Function to get DoS using the energy eigenvalues and the electron eigenvectors as weights
 # Surprisingly, vectorizing this in terms of energies results into a slower execution time
-def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ: float, N_k: int) -> Tuple[np.ndarray,np.ndarray]:
+def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ: float, N_k: int, vect: bool) -> Tuple[np.ndarray,np.ndarray]:
 
     # Get mesh
     Es = np.linspace(E_vals.min(),E_vals.max(),intervals)
@@ -128,9 +128,20 @@ def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ
     u_ups, u_downs = E_vecs[:, :N_b, :], E_vecs[:, N_b:2*N_b, :]
     u_up_squared = np.abs(u_ups)**2
     u_down_squared = np.abs(u_downs)**2
-    
-    for idx, E in enumerate(Es):
-        DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals[:, np.newaxis, :]-E)**2)).sum(axis=(0,2))
+
+    # Check if user wants to do stuff vectorized - the downside is that the pc may not be
+    # able to handle the operation memory-wise. If it can, vectorized is faster
+    if not vect:
+        for idx, E in enumerate(Es):
+            DOS[:,idx] = (Γ/np.pi)*(1.0/N_k)*((u_up_squared+u_down_squared)/(Γ**2 + (E_vals[:, np.newaxis, :]-E)**2)).sum(axis=(0,2))
+    else:
+        us = (u_up_squared+u_down_squared)[:, :, :, np.newaxis] # Shape (N_k, N_b, 2N_b, 1)
+        E_vals_expanded = E_vals[:, np.newaxis, :, np.newaxis] # Shape: (N_k, 1, 2*N_b, 1)
+        Es_expanded = Es[np.newaxis, np.newaxis, np.newaxis, :] # Shape: (1, 1, 1, intervals)
+
+        # Vectorized calculation of DOS
+        denominator = Γ**2 + (E_vals_expanded - Es_expanded)**2
+        DOS = (Γ/np.pi) * (1.0/N_k) * (us / denominator).sum(axis=(0, 2))
 
     return Es, DOS
 
