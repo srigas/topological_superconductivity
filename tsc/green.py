@@ -2,6 +2,8 @@
 The green.py file contains all the functions necessary for the construction of the Green's functions and all relevant calculations
 """
 
+import numpy as np
+
 # This function returns the fourier exponentials for the inverse Fourier transform
 def green_fourier(IPTS: np.ndarray, KPTS: np.ndarray) -> np.ndarray:
 

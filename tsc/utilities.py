@@ -145,22 +145,30 @@ def get_dos(E_vecs: np.ndarray, E_vals: np.ndarray, intervals: int, N_b: int, Γ
 
     return Es, DOS
 
+# This function allows us to re-shape the E_vecs and E_vals arrays so that we can go from
+# [u↑, u↓, v↑, v↓]^T into -> [u1↑, u1↓, v1↑, v1↓, u2↑, u2↓, v2↑, v2↓, etc.]^T
+def get_alt_vecs(E_vecs: np.ndarray) -> np.ndarray:
+
+    # Get number of basis atoms
+    N_b = E_vecs.shape[-1]//4
+    # Find new indices
+    indices = np.array([(i % 4) * N_b + i // 4 for i in range(4*N_b)])
+    
+    return E_vecs[:, indices, :]
+
 # Function that returns an energy mesh for DoS calculations within the Green's function formalism
-def get_dos_mesh(N: int, E_min: float, E_max: float, T: float, k_B: float = 1.0) -> Tuple[np.ndarray, np.ndarray]:
+def get_dos_mesh(N: int, E_min: float, E_max: float, Γ: float) -> np.ndarray:
 
     Es = np.zeros((N), dtype=np.complex128)
     # Get evenly spaced real energies mesh
     real_mesh = np.linspace(E_min, E_max, N)
     # Get the imaginary displacement
-    η = (0+1j)*np.pi*k_B*T
+    η = (0.0+1.0j)*Γ
     
     # Get Energies
     Es = real_mesh + η
-    # Get the corresponding "weights"
-    δε = real_mesh[1]-real_mesh[0]
-    Ws = np.ones((N), dtype=np.complex128)*δε
 
-    return Es, Ws
+    return Es
 
 # This is a helper function that is used to retrieve an energy mesh for integrations below
 # Needs further documentation, for reference see https://doi.org/10.1080/14786430802406256
