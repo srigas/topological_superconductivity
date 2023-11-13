@@ -203,3 +203,32 @@ def plot_bands_weighted(atom: int, weights: np.ndarray, band_vals: np.ndarray, x
     
     plt.show()
     return
+
+# This function compares DoS results acquired using either Hamiltonian eigenvalues, or Green's Functions
+def compare_dos(Es_1: np.ndarray, DoS_1: np.ndarray, Es_2: np.ndarray, DoS_2: np.ndarray):
+    
+    # Setup the grid
+    set_custom_grid()
+
+    # Setup figure and axes for two subplots, set dimensions
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+    
+    # Plot for the first set of data
+    ax1.plot(Es_1, DoS_1, label='Density of States', color='#d957ce')
+    ax1.set_xlabel('Energy')
+    ax1.set_ylabel('Density')
+    ax1.set_title('Atom DoS Plot (Eigenvalues Calculation)')
+    legend1 = ax1.legend()
+    plt.setp(legend1.get_texts(), color='white')
+    
+    # Plot for the second set of data
+    ax2.plot(Es_2, DoS_2, label='Density of States', color='#e0eb8f')
+    ax2.set_xlabel('Energy')
+    ax2.set_title("Atom DoS Plot (Green's Function Calculation)")
+    legend2 = ax2.legend()
+    plt.setp(legend2.get_texts(), color='white')
+    
+    plt.tight_layout()
+    plt.show()
+
+    return
