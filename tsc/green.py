@@ -81,4 +81,3 @@ def get_green_vec(Es: np.ndarray, E_vecs: np.ndarray, E_vals: np.ndarray, indice
     GFR = (1.0/N_k)*(fg_exp*GFK[:, row_indices[:, None], row_indices, :]).sum(axis=0) # Shape (4*N_imp, 4*N_imp, N_E)
 
     return GFR
-    

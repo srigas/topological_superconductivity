@@ -8,18 +8,6 @@ Also included are auxiliary functions that help extract arrays.
 import numpy as np
 from typing import Tuple
 
-# Function that takes an array of basis atom indices and returns the corresponding basis atoms info
-def extract_prev_vals(indices: np.ndarray, atoms:np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-
-    # Extract relevant info
-    E_0_prev = atoms[indices, 4]
-    U_prev = atoms[indices, 5]
-    n_bar_prev = atoms[indices, 6]
-    B_prev = atoms[indices, 7:10]
-    Λ_prev = atoms[indices, 10]
-
-    return E_0_prev, U_prev, n_bar_prev, B_prev, Λ_prev
-
 # Function that returns a single impurity atom's info
 def single_imp(N_x: int = 0, N_y: int = 0, N_z: int = 0, atom_index: int = 0, 
                E_0_new: float = 0.0, U_new: float = 0.0, n_bar_new: float = 1.0, 
@@ -28,8 +16,8 @@ def single_imp(N_x: int = 0, N_y: int = 0, N_z: int = 0, atom_index: int = 0,
     imp = np.array([[N_x, N_y, N_z, atom_index, E_0_new, U_new, n_bar_new, B_x_new, B_y_new, B_z_new, Λ_new]])
     return imp
 
-# Function that extracts new info for single impurity atoms or arrays thereof
-def extract_new_vals(imps: np.ndarray, TPTS: np.ndarray, a_1: np.ndarray, a_2: np.ndarray, a_3: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+# Function that extracts only the IPTS and indices from the imps array
+def get_IPTS(imps: np.ndarray, TPTS: np.ndarray, a_1: np.ndarray, a_2: np.ndarray, a_3: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     # Make IPTS array by multiplying lattice vectors by the corresponding ints
     IPTS = np.zeros((imps.shape[0], 3))
@@ -39,14 +27,19 @@ def extract_new_vals(imps: np.ndarray, TPTS: np.ndarray, a_1: np.ndarray, a_2: n
     # Now add the corresponding basis atoms
     IPTS += TPTS[indices,:]
 
-    # Extract new values for E_0, U, n_bar, B, Λ
-    E_0_new = imps[:, 4]
-    U_new = imps[:, 5]
-    n_bar_new = imps[:, 6]
-    B_new = imps[:, 7:10]
-    Λ_new = imps[:, 10]
+    return IPTS, indices
 
-    return IPTS, indices, E_0_new, U_new, n_bar_new, B_new, Λ_new
+# Function that extracts energy parameters info for single atoms or arrays thereof (either basis or impurity)
+def extract_H_vals(arr: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+    # Extract new values for E_0, U, n_bar, B, Λ
+    E_0_new = arr[:, 4]
+    U_new = arr[:, 5]
+    n_bar_new = arr[:, 6]
+    B_new = arr[:, 7:10]
+    Λ_new = arr[:, 10]
+
+    return E_0_new, U_new, n_bar_new, B_new, Λ_new
 
 # Function that returns a magnetic chain's info with a spin-helix configuration
 def mag_chain(N_imp: int, TPTS: np.ndarray, θ: float = 2.0*np.pi/3.0, B_0: np.ndarray = np.array([2.0, 0.0, 0.0]), 
@@ -103,4 +96,40 @@ def mag_chain(N_imp: int, TPTS: np.ndarray, θ: float = 2.0*np.pi/3.0, B_0: np.n
     Λ_new = np.zeros((N_imp))
     
     return xs, ys, zs, B_new, Λ_new
+
+# This function constructs the ΔH matrix after impurities are introduced
+def get_DH(atoms: np.ndarray, indices: np.ndarray, imps: np.ndarray, n_prev: np.ndarray, n_new: np.ndarray,
+           Δ_prev: np.ndarray, Δ_new: np.ndarray) -> np.ndarray:
+
     
+
+    return ΔΗ
+
+
+def prep_N_hamiltonian_vectorized(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
+                       s_0: np.ndarray, s_1: np.ndarray, s_2: np.ndarray, s_3: np.ndarray, N_k: int) -> np.ndarray:
+
+    N_b = E_0.shape[0]
+    H_prep = np.zeros((2 * N_b, 2 * N_b), dtype=np.complex128)
+    
+    # Calculate the scalar term for each h matrix
+    scalar_terms = E_0 - μ + U * (n - n_bar)
+    
+    # Calculate the contributions for each sigma matrix
+    h_contrib = np.zeros((N_b, 2, 2), dtype=np.complex128)
+    
+    h_contrib += scalar_terms[:, np.newaxis, np.newaxis] * s_0  # Broadcasting scalar_terms
+    h_contrib -= B[:, 0, np.newaxis, np.newaxis] * s_1  # Broadcasting B[:, 0]
+    h_contrib -= B[:, 1, np.newaxis, np.newaxis] * s_2  # Broadcasting B[:, 1]
+    h_contrib -= B[:, 2, np.newaxis, np.newaxis] * s_3  # Broadcasting B[:, 2]
+    
+    # Fill the diagonal blocks of H_prep
+    H_prep[np.arange(N_b), np.arange(N_b)] = h_contrib[:, 0, 0]
+    H_prep[np.arange(N_b), np.arange(N_b) + N_b] = h_contrib[:, 0, 1]
+    H_prep[np.arange(N_b) + N_b, np.arange(N_b)] = h_contrib[:, 1, 0]
+    H_prep[np.arange(N_b) + N_b, np.arange(N_b) + N_b] = h_contrib[:, 1, 1]
+    
+    # Create a 3D array with copies of H_prep along the first dimension
+    H_prep_3D = np.tile(H_prep[np.newaxis, :, :], (N_k, 1, 1))
+
+    return H_prep_3D

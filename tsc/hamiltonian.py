@@ -152,7 +152,8 @@ def get_SC_hamiltonian(k: int, H_prep: np.ndarray, atom_IJ: np.ndarray, num_neig
 
 # -----------------------------------------------------------------------------------
 # The following are some vectorized approaches at building the Hamiltonian matrices
-# Feel free to use them or not use them
+# They have to be used when solving the BdG equations self-consistently via a GPU
+# but they can also be used even in the CPU case
 # -----------------------------------------------------------------------------------
 
 def prep_N_hamiltonian_vectorized(E_0: np.ndarray, μ: float, U: np.ndarray, n: np.ndarray, n_bar: np.ndarray, B: np.ndarray, 
