@@ -41,9 +41,9 @@ class Config:
     # Bravais lattice
     latt = "SC"
     # k-points for the k-space mesh
-    N_x: int = 40
-    N_y: int = 40
-    N_z: int = 40
+    N_x: int = 80
+    N_y: int = 80
+    N_z: int = 80
     # cutoff distance to determine the nearest-neighbours
     R_max: float = 1.1
     # hopping element exponential constant
