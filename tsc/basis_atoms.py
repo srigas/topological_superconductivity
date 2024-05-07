@@ -9,14 +9,15 @@ import numpy as np
 from typing import Tuple
 
 # Function that returns a single basis atom as a (1, 11) numpy array
-def single_atom(x: float = 0.0, y: float = 0.0, z: float = 0.0, 
+def single_atom(n_1: float = 0.0, n_2: float = 0.0, n_3: float = 0.0, 
                 atom_type: int = 1, E_0: float = 0.0, U: float = 0.0, n_bar: float = 1.0, 
                 B_x: float = 0.0, B_y: float = 0.0, B_z: float = 0.0, Λ: float = 0.5) -> np.ndarray:
     
-    atom = np.array([[x, y, z, atom_type, E_0, U, n_bar, B_x, B_y, B_z, Λ]])
+    atom = np.array([[n_1, n_2, n_3, atom_type, E_0, U, n_bar, B_x, B_y, B_z, Λ]])
     return atom
 
 # Function that returns a slab along a specified axis, with given starting index and length
+# Notice that here fixed_coord_1 and fixed_coord_2 correspond to cartesian and not reduced coordinates
 def slab(start_index: int = 0, slab_length: int = 50, fixed_coord_1: float = 0.0, fixed_coord_2: float = 0.0, axis: str = 'z', 
          atom_type: int = 1, E_0: float = 0.0, U: float = 0.0, n_bar: float = 0.4, 
          B_x: float = 0.0, B_y: float = 0.0, B_z: float = 0.0, Λ: float = 0.5) -> np.ndarray:
@@ -50,8 +51,14 @@ def slab(start_index: int = 0, slab_length: int = 50, fixed_coord_1: float = 0.0
     
     return slab
 
-def extract_atom_vectors(basis_atoms: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    TPTS = basis_atoms[:, :3]
+# Unlike in the FORTRAN version, where the basis_atoms x, y and z correspond to cartesian coordinates,
+# here n_1, n_2 and n_3 correspond to multiple of the lattice vectors a_1, a_2 and a_3, representing reduced coordinates
+# So A is the matrix of a_1, a_2 and a_3 which is necessary to return the correct TPTS array
+def extract_atom_vectors(basis_atoms: np.ndarray, A: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    # Extract basis atoms' coordinates
+    ns = basis_atoms[:, :3]
+    TPTS = np.dot(ns,A)
+    # Extract the other information
     atom_types = basis_atoms[:, 3]
     E_0 = basis_atoms[:, 4]
     U = basis_atoms[:, 5]

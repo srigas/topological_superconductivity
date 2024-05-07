@@ -7,9 +7,11 @@ import numpy as np
 from typing import Tuple
 
 # Function that returns the Bravais vectors of the corresponding lattice as a tuple
+# Current version: Simple Cubic (SC), Base-Centered Cubic (BCC), Face-Centered Cubic (FCC)
+# and Hexagonal (HEX). Update this to incorporate new lattices.
 def get_bravais(latt: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     
-    assert latt in ('SC', 'BCC', 'FCC'), "Not implemented. Choose from 'SC', 'BCC', or 'FCC'"
+    assert latt in ('SC', 'BCC', 'FCC', 'HEX'), "Not implemented. Choose from 'SC', 'BCC', 'FCC' or 'HEX'."
     
     if latt == "SC":
         a_1 = np.array([1.0,0.0,0.0])
@@ -19,10 +21,14 @@ def get_bravais(latt: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         a_1 = np.array([0.5,0.5,-0.5])
         a_2 = np.array([-0.5,0.5,0.5])
         a_3 = np.array([0.5,-0.5,0.5])
-    else:
+    elif latt == "FCC":
         a_1 = np.array([0.5,0.5,0.0])
         a_2 = np.array([0.0,0.5,0.5])
         a_3 = np.array([0.5,0.0,0.5])
+    elif latt == "HEX":
+        a_1 = np.array([1.5,0.5*np.sqrt(3),0.0])
+        a_2 = np.array([1.5,-0.5*np.sqrt(3),0.0])
+        a_3 = np.array([0.0,0.0,100.0])
         
     return a_1, a_2, a_3
 
